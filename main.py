@@ -79,7 +79,7 @@ def generateConfusionMatrix(validationOriginal = None, validationPredicted = Non
     plt.show()
 
 if __name__ == '__main__':
-    workingOnTraining = True
+    workingOnTraining = False
 
     #Extract the data as DFs
     trainingDf = fileToDf("TrainingData.txt", True)
@@ -129,3 +129,8 @@ if __name__ == '__main__':
     else :
         testingPredicted = model.predict(testingData)
         print(testingPredicted)
+
+        testingData["Labels"] = testingPredicted
+        print(testingData)
+        testingData.to_csv("TestingResults.txt", index=False, header=False)
+
