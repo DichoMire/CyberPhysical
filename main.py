@@ -30,8 +30,9 @@ def generateConfusionMatrix(validationOriginal = None, validationPredicted = Non
     plt.show()
 
 if __name__ == '__main__':
+    pd.set_option('display.max_rows', None)
     #If True, we make use of our internal three datasets. Otherwise we predict the original Testing DF.
-    workingOnTraining = True
+    workingOnTraining = False
     finalTest = True
 
     if workingOnTraining :
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     #model = LinearRegression()
     #model = LinearSVR()
     #model = DecisionTreeClassifier()
-    model = SVC()
+    model = SVC(kernel="rbf", C= 1.0)
 
     #Fit the model using the Training Dataset
     model.fit(trainingData, trainingLabels)
@@ -79,7 +80,7 @@ if __name__ == '__main__':
             validationPredicted = model.predict(validationData)
 
             """Required if using a non-classifier model"""
-            #validationPredicted = list(map(lambda x : 0 if x <= 0.5 else 1, validationPredicted))
+            validationPredicted = list(map(lambda x : 0 if x <= 0.5 else 1, validationPredicted))
 
             #Calculate F1 score and confusion matrix for hyperparameter optimization purposes
             f1Res = f1_score(validationLabels, validationPredicted)
