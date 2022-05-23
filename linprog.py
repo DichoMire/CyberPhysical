@@ -55,11 +55,14 @@ if __name__ == '__main__':
     for index, row in input.iterrows() :
         taskRestr = []
         for hour in range(row["ReadyT"], row["Deadline"] + 1) :
-            restr = "0 lt u" + str(row["User"]) + "_t" + str(row["Task"]) + "_h" + str(hour) + " lt " + str(row["MaxH"])
-            taskRestr += "u" + str(row["User"]) + "_t" + str(row["Task"]) + "_h" + str(hour) + " + "
+            userID = "u" + str(row["User"]) + "_t" + str(row["Task"]) + "_h" + str(hour)
+            restr = "0 lt " + userID + " lt " + str(row["MaxH"])
+            taskRestr += userID + " + "
             restrictions.append(restr)
 
-            variables.append("u" + str(row["User"]) + "_t" + str(row["Task"]) + "_h" + str(hour))
+            variables.append((row["User"], row["Task"], hour))
+
+            #variables.append("u" + str(row["User"]) + "_t" + str(row["Task"]) + "_h" + str(hour))
         taskRestr = "".join(taskRestr[:-2]) + "= " + str(row["EnergyD"])
         restrictions.append(taskRestr)
     
@@ -67,7 +70,7 @@ if __name__ == '__main__':
 
     for i in range(1, 6) :
         rs = [s for s in restrictions if "u" + str(i) in s]
-        vs = [s for s in variables if "u" + str(i) in s]
+        vs = [s for s in variables if i == int(s[0])]
         users.append((i, rs, vs))
 
     resultsDf = fileToDf("TestingResults.txt")
@@ -77,11 +80,13 @@ if __name__ == '__main__':
     for user in users :
         finRestr = "c = "
         for hour in range(0, 24) :
-            hours = [s for s in user[2] if "h" + str(hour) in s]
+            hours = [s for s in user[2] if hour == s[2]]
             for htask in hours :
-                finRestr += str(ex1[hour]) + " * " + str(htask) + " + "
+                userID = "u" + str(htask[0]) + "_t" + str(htask[1]) + "_h" + str(htask[2])
+                finRestr += str(ex1[hour]) + " * " + userID + " + "
+        finRestr = finRestr[:-3]
         user[1].append(finRestr)
-        print(finRestr)
+        print(user[1])
 
-
+    
 
