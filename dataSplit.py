@@ -2,7 +2,7 @@ import pandas as pd, random
 
 #Convert raw file to pandas DataFrame
 def fileToDf(path = None, isTraining = True) :
-        #Open and read training file
+    #Open and read training file
     f = open(path,"r")
     lines = f.readlines()
     
