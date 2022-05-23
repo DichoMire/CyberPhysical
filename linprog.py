@@ -71,7 +71,17 @@ if __name__ == '__main__':
         users.append((i, rs, vs))
 
     resultsDf = fileToDf("TestingResults.txt")
-    print(resultsDf)
+    
+    ex1 = resultsDf.iloc[1]
+
+    for user in users :
+        finRestr = "c = "
+        for hour in range(0, 24) :
+            hours = [s for s in user[2] if "h" + str(hour) in s]
+            for htask in hours :
+                finRestr += str(ex1[hour]) + " * " + str(htask) + " + "
+        user[1].append(finRestr)
+        print(finRestr)
 
 
 
