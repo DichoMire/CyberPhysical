@@ -82,36 +82,39 @@ if __name__ == '__main__':
     #Extract the TestingResults to gather the price info for the abnormal entries.
     resultsDf = fileToDf("TestingResults.txt")
     
-    ex1 = resultsDf.iloc[1]
+    abnormals = resultsDf[resultsDf["Labels"] == 1]
 
-    #Since each user is separate, we do not apply game theory.
-    #Therefore we simulate each user separately.
-    #Iterate through each user
-    for user in users :
-        finRestr = "c = "
-        #Iterate through each hour
-        for hour in range(0, 24) :
-            #Collect all variables for all the tasks for a given hour
-            hours = [s for s in user[2] if hour == s[2]]
-            #For each available hour that has variables
-            #Append the weighted by the price variable to the final cost restriction
-            for htask in hours :
-                userID = "u" + str(htask[0]) + "_t" + str(htask[1]) + "_h" + str(htask[2])
-                finRestr += str(ex1[hour]) + " * " + userID + " + "
-        #Remove the hanging "+" sign at the end and append to list of restrictions
-        finRestr = finRestr[:-3]
-        user[1].append(finRestr)
+    for idx, row in abnormals.iterrows() :
+        finRestr = ""
+        #Since each user is separate, we do not apply game theory.
+        #Therefore we simulate each user separately.
+        #Iterate through each user
+        for user in users :
+            finRestr = "c = "
+            #Iterate through each hour
+            for hour in range(0, 24) :
+                #Collect all variables for all the tasks for a given hour
+                hours = [s for s in user[2] if hour == s[2]]
+                #For each available hour that has variables
+                #Append the weighted by the price variable to the final cost restriction
+                for htask in hours :
+                    userID = "u" + str(htask[0]) + "_t" + str(htask[1]) + "_h" + str(htask[2])
+                    finRestr += str(row[hour]) + " * " + userID + " + "
+            #Remove the hanging "+" sign at the end and append to list of restrictions
+            finRestr = finRestr[:-3]
+            user[1].append(finRestr)
 
-    #For each user compute the program starting with the cost restriction
-    for user in users :
-        lpProg = "min: c;\n\n"
-        lpProg += user[1][-1] + ";\n"
-        #And then iterating through all basic restrictions
-        for restriction in user[1][:-1] :
-            lpProg += restriction.replace("lt", "<=") + ";\n"
-        print(lpProg)
-        
-        print("\n\n\n")
+        #For each user compute the program starting with the cost restriction
+        for user in users :
+            lpProg = "min: c;\n\n"
+            lpProg += user[1][-1] + ";\n"
+            #And then iterating through all basic restrictions
+            for restriction in user[1][:-1] :
+                lpProg += restriction.replace("lt", "<=") + ";\n"
+            user[1].pop(-1)
+            with open("LPs/r" + str(idx) + "_u" + str(user[0]) + ".lp", "w") as file :
+                file.write(lpProg)
+                file.close()
 
     
 
