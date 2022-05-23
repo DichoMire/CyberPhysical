@@ -1,60 +1,11 @@
-import pandas as pd, random, matplotlib.pyplot as plt
+import pandas as pd, matplotlib.pyplot as plt
 
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import LinearSVR, SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import f1_score, confusion_matrix
 
-def fileToDf(path = None, isTraining = True) :
-        #Open and read training file
-    f = open(path,"r")
-    lines = f.readlines()
-    
-    #Data structures to parse input
-    data = []
-    if isTraining :
-        labels = []
-
-    for line in lines :
-        #Extract the label as int
-        input = line.split(",")
-        if isTraining :
-            label = int(input[-1].strip())
-            input.pop(-1)
-
-        #Convert string input array to float input array
-        input = map(lambda x : float(x), input)
-
-        data.append(input)
-        if isTraining :
-            labels.append(label)
-
-    #Create a DataFrame from parsed input
-    trainingDf = pd.DataFrame(data=data)
-    if isTraining :
-        trainingDf["Labels"] = labels
-
-    return trainingDf
-
-def splitTrainingSet(trainingDf = None) :
-    indexes = trainingDf.index.tolist()
-
-    randTrainingSample = random.sample(indexes, int(len(indexes)/10)*8)
-    remaining = [ind for ind in indexes if ind not in randTrainingSample]
-    randTestingSample = random.sample(remaining, int(len(remaining)/2))
-    randValidationSample = [ind for ind in remaining if ind not in randTestingSample]
-
-    randTrainingSample = trainingDf.iloc[randTrainingSample]
-    randTestingSample = trainingDf.iloc[randTestingSample]
-    randValidationSample = trainingDf.iloc[randValidationSample]
-    testingOriginal = randTestingSample.copy()
-    validationOriginal = randValidationSample.copy()
-
-    randValidationSample = randValidationSample.drop(['Labels'], axis = 1)
-    randTestingSample = randTestingSample.drop(['Labels'], axis = 1)
-
-    return(randTrainingSample, randTestingSample, randValidationSample, testingOriginal["Labels"], validationOriginal["Labels"])
-
+#Function that creates and displays a confusion matrix graph
 def generateConfusionMatrix(validationOriginal = None, validationPredicted = None) :
     """The following code is take from:
     https://vitalflux.com/accuracy-precision-recall-f1-score-python-example/
@@ -79,18 +30,36 @@ def generateConfusionMatrix(validationOriginal = None, validationPredicted = Non
     plt.show()
 
 if __name__ == '__main__':
-    workingOnTraining = False
+    #If True, we make use of our internal three datasets. Otherwise we predict the original Testing DF.
+    workingOnTraining = True
+    finalTest = True
 
-    #Extract the data as DFs
-    trainingDf = fileToDf("TrainingData.txt", True)
-    testingDf = fileToDf("TestingData.txt", False)
-
-    #Split training DataFrame into a training and validation DF
     if workingOnTraining :
-        (trainingData, testingData, validationData, testingOriginal, validationOriginal) = splitTrainingSet(trainingDf)
+        #Extract the data as DFs
+        trainingDf = pd.read_csv("Training.csv")
+        validationDf = pd.read_csv("Validation.csv")
+
+        testingDf = pd.read_csv("Testing.csv")
+
+        #Split into Data and Labels
+        trainingData = trainingDf.iloc[:, :-1]
+        trainingLabels = trainingDf["Labels"]
+
+        validationData = validationDf.iloc[:, :-1]
+        validationLabels = validationDf["Labels"]
+
+        testingData = testingDf.iloc[:, :-1]
+        testingLabels = testingDf["Labels"]
     else :
-        trainingData = trainingDf
-        testingData = testingDf
+        #Extract the data as DFs
+        trainingDf = pd.read_csv("TrainingFull.csv")
+        testingDf = pd.read_csv("TestingFull.csv")
+
+        #Split into Data and Labels
+        trainingData = trainingDf.iloc[:, :-1]
+        trainingLabels = trainingDf["Labels"]
+
+        testingData = testingDf.iloc[:, :]
 
     """Initialize and fit the model
     
@@ -101,36 +70,37 @@ if __name__ == '__main__':
     #model = DecisionTreeClassifier()
     model = SVC()
 
-
-    model.fit(trainingData[range(0,24)], trainingData["Labels"])
+    #Fit the model using the Training Dataset
+    model.fit(trainingData, trainingLabels)
 
     if workingOnTraining :
-        validationPredicted = model.predict(validationData[range(0,24)])
+        if not finalTest :
+            #Calulate the predicted values for the validation DF.
+            validationPredicted = model.predict(validationData)
 
-        """Required if using a non-classifier model"""
-        #validationPredicted = list(map(lambda x : 0 if x <= 0.5 else 1, testingPredicted))
+            """Required if using a non-classifier model"""
+            #validationPredicted = list(map(lambda x : 0 if x <= 0.5 else 1, validationPredicted))
 
-        """Calculate F1 score and confusion matrix for hyperparameter  purposes"""
-        f1Res = f1_score(validationOriginal, validationPredicted)
-        #print(f1Res)
+            #Calculate F1 score and confusion matrix for hyperparameter optimization purposes
+            f1Res = f1_score(validationLabels, validationPredicted)
+            print(f1Res)
 
-        generateConfusionMatrix(validationOriginal, validationPredicted)
+            generateConfusionMatrix(validationLabels, validationPredicted)
+        else :
+            """Once we've tuned the hyperparameter, we can try out our model on the test set.
+            We should only use that once, as making decisisons off of more predictions on the test set is pointless.
+            """
+            testingPredicted = model.predict(testingData)
 
+            f1Res = f1_score(testingLabels, testingPredicted)
+            print(f1Res)
 
-        """Once we've tuned the hyperparameter, we can try out our model on the test set.
-        We should only use that once, as making decisisons off of more predictions on the test set is pointless.
-        """
-        #testingPredicted = model.predict(testingData[range(0,24)])
-
-        #f1Res = f1_score(testingOriginal, testingPredicted)
-        #print(f1Res)
-
-        #generateConfusionMatrix(testingOriginal, testingPredicted)
+            generateConfusionMatrix(testingLabels, testingPredicted)
     else :
+        #Predict the values for the actual Test set
         testingPredicted = model.predict(testingData)
-        print(testingPredicted)
-
         testingData["Labels"] = testingPredicted
-        print(testingData)
+
+        #Export results as .txt
         testingData.to_csv("TestingResults.txt", index=False, header=False)
 
